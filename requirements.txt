@@ -1,0 +1,9 @@
+streamlit
+streamlit-webrtc
+opencv-python
+mediapipe
+numpy
+pandas
+librosa
+PyPDF2
+openai-whisper

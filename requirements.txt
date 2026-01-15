@@ -1,9 +1,8 @@
 streamlit
 streamlit-webrtc
-opencv-python
-mediapipe
+opencv-python-headless
 numpy
 pandas
-librosa
 PyPDF2
-openai-whisper
+librosa
+soundfile

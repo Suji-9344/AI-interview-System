@@ -17,9 +17,9 @@ except:
 # APP CONFIG
 # -----------------------------
 st.set_page_config(page_title="AI Interview System", layout="centered")
-st.title("🤖 AI Interview System (Realistic Evaluation)")
+st.title("🤖 AI Interview Evaluation System")
 
-st.caption("Default training dataset size: 500 samples")
+st.caption("Model trained on default dataset of 500 samples")
 
 # -----------------------------
 # RESUME UPLOAD
@@ -49,7 +49,8 @@ if uploaded_file:
 def extract_skills(text):
     skills_db = [
         "python", "java", "sql",
-        "machine learning", "communication",
+        "machine learning",
+        "communication",
         "problem solving"
     ]
     return [s for s in skills_db if s in text.lower()]
@@ -62,18 +63,19 @@ skills = extract_skills(resume_text)
 st.header("👤 AI Interviewer")
 
 interviewer = st.radio(
-    "Choose Interviewer",
+    "Select Interviewer",
     ["Female Interviewer", "Male Interviewer"]
 )
 
 # -----------------------------
-# INTERVIEW QUESTIONS
+# QUESTIONS
 # -----------------------------
 st.header("🧠 Interview Questions")
 
 general_question = "Tell me about yourself."
+
 technical_question = (
-    f"Explain a project where you used {random.choice(skills)}."
+    f"Explain a real-world project where you used {random.choice(skills)}."
     if skills else
     "Explain a technical project you have worked on."
 )
@@ -95,7 +97,7 @@ if CV2_AVAILABLE:
         def recv(self, frame):
             img = frame.to_ndarray(format="bgr24")
             h, w, _ = img.shape
-            cv2.rectangle(img, (60, 60), (w-60, h-60), (255, 0, 0), 3)
+            cv2.rectangle(img, (60, 60), (w - 60, h - 60), (255, 0, 0), 3)
             cv2.putText(
                 img,
                 interviewer,
@@ -117,44 +119,65 @@ else:
     st.warning("Webcam not supported. Using simulated interviewer.")
 
 # -----------------------------
-# USER ANSWERS (SPEECH → TEXT)
+# USER ANSWER (SPEECH → TEXT)
 # -----------------------------
-st.header("🎙️ User Answers")
+st.header("🎙️ User Answer")
+
+st.info(
+    "Speak your answer. For demo purposes, type the converted speech text below."
+)
 
 answer_text = st.text_area(
-    "Converted Speech Text (speech-to-text):",
-    height=140,
-    placeholder="Speak clearly... text will appear here"
+    "Converted Speech Text",
+    height=150,
+    placeholder="Your spoken answer will appear here..."
 )
 
 # -----------------------------
-# SCORING LOGIC (FIXED)
+# SCORING FUNCTIONS (FIXED)
 # -----------------------------
 def face_confidence():
     return random.randint(60, 90)
 
 def speech_clarity(text):
     if not text.strip():
-        return 0   # 🔴 FIX: no speech = 0
+        return 0  # NO SPEECH → 0
+
     fillers = ["um", "uh", "maybe", "i think"]
     penalty = sum(text.lower().count(f) for f in fillers)
-    return max(40, 100 - penalty * 10)
+    return max(50, 100 - penalty * 10)
 
 def content_quality(text):
     if not text.strip():
-        return 0   # 🔴 FIX
+        return 0
     return min(len(text.split()) * 2, 100)
 
 def answer_correctness(text, skills):
-    if not text.strip() or not skills:
+    if not text.strip():
         return 0
-    matches = sum(1 for s in skills if s in text.lower())
-    return min(matches * 25, 100)
+
+    if not skills:
+        return 50  # general baseline
+
+    text = text.lower()
+    match_count = sum(1 for s in skills if s in text)
+
+    if match_count == 0:
+        return 30
+    elif match_count == 1:
+        return 60
+    else:
+        return 90
 
 # -----------------------------
 # FINAL EVALUATION
 # -----------------------------
 if st.button("📊 Evaluate Interview"):
+
+    # ❌ Block fake evaluation
+    if not answer_text.strip():
+        st.error("No speech detected. Please answer the question.")
+        st.stop()
 
     with st.spinner("Evaluating interview..."):
         time.sleep(2)
@@ -182,17 +205,19 @@ if st.button("📊 Evaluate Interview"):
 
     # Recommendations
     recommendations = []
-    if speech_score == 0:
-        recommendations.append("Answer was not detected. Please speak clearly.")
+    if speech_score < 50:
+        recommendations.append("Speak clearly and confidently.")
     if correctness_score < 50:
-        recommendations.append("Include technical keywords related to your resume.")
+        recommendations.append("Use technical keywords from your resume.")
+    if content_score < 50:
+        recommendations.append("Give detailed answers with examples.")
     if face_score < 70:
-        recommendations.append("Improve eye contact and facial confidence.")
+        recommendations.append("Improve eye contact and facial expressions.")
     if not recommendations:
-        recommendations.append("Excellent interview performance.")
+        recommendations.append("Excellent performance. Keep practicing.")
 
     # -----------------------------
-    # OUTPUT
+    # RESULTS
     # -----------------------------
     st.success("✅ Interview Evaluation Completed")
 

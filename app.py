@@ -18,11 +18,7 @@ def set_bg(image_file):
         unsafe_allow_html=True
     )
 
-set_bg("background.png")
+set_bg("user_avatar.png")
 col1, col2, col3 = st.columns([1, 2, 1])
 
-with col2:
-    st.image("user_avatar.png", width=1000)
-    st.markdown("<h3 style='color:white; text-align:center;'>🧑 Candidate</h3>", unsafe_allow_html=True)
-    # Buttons below
 

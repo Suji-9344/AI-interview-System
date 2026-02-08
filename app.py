@@ -1,235 +1,156 @@
 import streamlit as st
+import pdfplumber
+import re
 import random
-import time
-from PyPDF2 import PdfReader
 
-from streamlit_webrtc import webrtc_streamer, VideoProcessorBase
-import av
-
-# Safe OpenCV import
-try:
-    import cv2
-    CV2_AVAILABLE = True
-except:
-    CV2_AVAILABLE = False
-
-# -----------------------------
-# APP CONFIG
-# -----------------------------
-st.set_page_config(page_title="AI Interview System", layout="centered")
-st.title("🤖 AI Interview Evaluation System")
-
-st.caption("Model trained on default dataset of 500 samples")
-
-# -----------------------------
-# RESUME UPLOAD
-# -----------------------------
-st.header("📄 Upload Resume")
-
-uploaded_file = st.file_uploader(
-    "Upload resume (PDF or TXT)",
-    type=["pdf", "txt"]
+# ---------------- PAGE CONFIG ----------------
+st.set_page_config(
+    page_title="AI-Based Interview Evaluation System",
+    page_icon="🎯",
+    layout="wide"
 )
 
-resume_text = ""
+# ---------------- CUSTOM CSS ----------------
+st.markdown("""
+<style>
+.main {
+    background-color: #f5f7fb;
+}
 
-if uploaded_file:
-    if uploaded_file.type == "application/pdf":
-        reader = PdfReader(uploaded_file)
-        for page in reader.pages:
-            resume_text += page.extract_text()
-    else:
-        resume_text = uploaded_file.read().decode("utf-8")
+.header {
+    background: linear-gradient(90deg, #2563eb, #3b82f6);
+    padding: 35px;
+    border-radius: 12px;
+    color: white;
+    font-size: 34px;
+    font-weight: bold;
+}
 
-    st.success("Resume uploaded successfully")
+.subtext {
+    font-size: 16px;
+    margin-top: 8px;
+}
 
-# -----------------------------
-# SKILL EXTRACTION
-# -----------------------------
+.card {
+    background-color: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0px 4px 12px rgba(0,0,0,0.08);
+    margin-top: 20px;
+}
+
+.stButton>button {
+    background-color: #ef4444;
+    color: white;
+    padding: 12px 25px;
+    border-radius: 8px;
+    font-size: 16px;
+    border: none;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ---------------- HEADER ----------------
+st.markdown("""
+<div class="header">
+AI-Based Interview Evaluation System
+<div class="subtext">Upload your resume to get started</div>
+</div>
+""", unsafe_allow_html=True)
+
+# ---------------- FUNCTIONS ----------------
+def extract_text_from_pdf(uploaded_file):
+    text = ""
+    with pdfplumber.open(uploaded_file) as pdf:
+        for page in pdf.pages:
+            text += page.extract_text() + "\n"
+    return text
+
+
+def extract_name(text):
+    lines = text.split("\n")
+    for line in lines[:5]:  # mostly name is in top
+        if len(line.split()) <= 3:
+            return line.strip()
+    return "Candidate"
+
+
 def extract_skills(text):
-    skills_db = [
-        "python", "java", "sql",
-        "machine learning",
-        "communication",
-        "problem solving"
-    ]
-    return [s for s in skills_db if s in text.lower()]
+    skill_list = ["Python", "SQL", "Machine Learning", "Java", "C", "Data Science"]
+    found_skills = [skill for skill in skill_list if skill.lower() in text.lower()]
+    return found_skills
 
-skills = extract_skills(resume_text)
 
-# -----------------------------
-# AI INTERVIEWER SELECTION
-# -----------------------------
-st.header("👤 AI Interviewer")
+def generate_scores(skills):
+    base = 60
+    tech_score = min(40, 20 + len(skills) * 5)
+    comm_score = random.randint(12, 18)
+    conf_score = random.randint(10, 14)
 
-interviewer = st.radio(
-    "Select Interviewer",
-    ["Female Interviewer", "Male Interviewer"]
-)
+    final_score = tech_score + comm_score + conf_score
+    return tech_score, comm_score, conf_score, final_score
 
-# -----------------------------
-# QUESTIONS
-# -----------------------------
-st.header("🧠 Interview Questions")
 
-general_question = "Tell me about yourself."
+# ---------------- MAIN CONTENT ----------------
+col1, col2 = st.columns([1, 2])
 
-technical_question = (
-    f"Explain a real-world project where you used {random.choice(skills)}."
-    if skills else
-    "Explain a technical project you have worked on."
-)
+# -------- LEFT SIDE --------
+with col1:
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    st.subheader("📄 Upload Your Resume")
+    resume = st.file_uploader("Browse files", type=["pdf"])
+    analyze = st.button("Analyze Resume")
+    st.markdown("</div>", unsafe_allow_html=True)
 
-st.subheader("Round 1 – General Question")
-st.info(general_question)
+# -------- RIGHT SIDE --------
+if resume and analyze:
+    text = extract_text_from_pdf(resume)
+    name = extract_name(text)
+    skills = extract_skills(text)
 
-st.subheader("Round 2 – Technical Question")
-st.info(technical_question)
+    tech, comm, conf, final = generate_scores(skills)
 
-# -----------------------------
-# INTERVIEWER WEBCAM
-# -----------------------------
-st.header("🎥 AI Interviewer Webcam")
+    with col1:
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("Resume Analysis")
+        st.write(f"**Name:** {name}")
+        st.write(f"**Skills:** {', '.join(skills) if skills else 'Not Detected'}")
+        st.write("**Education:** B.E / B.Tech")
+        st.write("**Project:** AI-Based Interview System")
+        st.markdown("</div>", unsafe_allow_html=True)
 
-if CV2_AVAILABLE:
+    with col2:
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("🎥 Interview Simulation")
 
-    class InterviewerCam(VideoProcessorBase):
-        def recv(self, frame):
-            img = frame.to_ndarray(format="bgr24")
-            h, w, _ = img.shape
-            cv2.rectangle(img, (60, 60), (w - 60, h - 60), (255, 0, 0), 3)
-            cv2.putText(
-                img,
-                interviewer,
-                (80, 50),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                1,
-                (255, 0, 0),
-                2
-            )
-            return av.VideoFrame.from_ndarray(img, format="bgr24")
+        c1, c2 = st.columns(2)
+        with c1:
+            st.info("👔 AI HR\n\nTell me about yourself")
+        with c2:
+            st.success(f"🎧 {name}\n\nAnswering...")
 
-    webrtc_streamer(
-        key="interviewer_cam",
-        video_processor_factory=InterviewerCam,
-        media_stream_constraints={"video": True, "audio": False}
-    )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("📊 Score Breakdown")
+
+        st.write(f"Technical: **{tech} / 40**")
+        st.write(f"Communication: **{comm} / 20**")
+        st.write(f"Confidence: **{conf} / 15**")
+
+        st.markdown(f"### 🏆 Final Score: **{final} / 100**")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("📝 Feedback & Suggestions")
+
+        st.write("✅ **Strengths:** Good technical understanding")
+        st.write("⚠️ **Improvements:** Improve eye contact and fluency")
+        st.write("💡 **Tip:** Practice mock interviews regularly")
+
+        st.markdown("</div>", unsafe_allow_html=True)
 
 else:
-    st.warning("Webcam not supported. Using simulated interviewer.")
+    with col2:
+        st.info("👆 Upload resume and click **Analyze Resume** to start")
 
-# -----------------------------
-# USER ANSWER (SPEECH → TEXT)
-# -----------------------------
-st.header("🎙️ User Answer")
-
-st.info(
-    "Speak your answer. For demo purposes, type the converted speech text below."
-)
-
-answer_text = st.text_area(
-    "Converted Speech Text",
-    height=150,
-    placeholder="Your spoken answer will appear here..."
-)
-
-# -----------------------------
-# SCORING FUNCTIONS (FIXED)
-# -----------------------------
-def face_confidence():
-    return random.randint(60, 90)
-
-def speech_clarity(text):
-    if not text.strip():
-        return 0  # NO SPEECH → 0
-
-    fillers = ["um", "uh", "maybe", "i think"]
-    penalty = sum(text.lower().count(f) for f in fillers)
-    return max(50, 100 - penalty * 10)
-
-def content_quality(text):
-    if not text.strip():
-        return 0
-    return min(len(text.split()) * 2, 100)
-
-def answer_correctness(text, skills):
-    if not text.strip():
-        return 0
-
-    if not skills:
-        return 50  # general baseline
-
-    text = text.lower()
-    match_count = sum(1 for s in skills if s in text)
-
-    if match_count == 0:
-        return 30
-    elif match_count == 1:
-        return 60
-    else:
-        return 90
-
-# -----------------------------
-# FINAL EVALUATION
-# -----------------------------
-if st.button("📊 Evaluate Interview"):
-
-    # ❌ Block fake evaluation
-    if not answer_text.strip():
-        st.error("No speech detected. Please answer the question.")
-        st.stop()
-
-    with st.spinner("Evaluating interview..."):
-        time.sleep(2)
-
-    face_score = face_confidence()
-    speech_score = speech_clarity(answer_text)
-    content_score = content_quality(answer_text)
-    correctness_score = answer_correctness(answer_text, skills)
-
-    final_score = round(
-        face_score * 0.25 +
-        speech_score * 0.25 +
-        content_score * 0.25 +
-        correctness_score * 0.25,
-        2
-    )
-
-    # Readiness Level
-    if final_score >= 80:
-        level = "Job Ready"
-    elif final_score >= 60:
-        level = "Intermediate"
-    else:
-        level = "Needs Improvement"
-
-    # Recommendations
-    recommendations = []
-    if speech_score < 50:
-        recommendations.append("Speak clearly and confidently.")
-    if correctness_score < 50:
-        recommendations.append("Use technical keywords from your resume.")
-    if content_score < 50:
-        recommendations.append("Give detailed answers with examples.")
-    if face_score < 70:
-        recommendations.append("Improve eye contact and facial expressions.")
-    if not recommendations:
-        recommendations.append("Excellent performance. Keep practicing.")
-
-    # -----------------------------
-    # RESULTS
-    # -----------------------------
-    st.success("✅ Interview Evaluation Completed")
-
-    st.metric("👁️ Facial Confidence", f"{face_score}/100")
-    st.metric("🗣️ Speech Clarity", f"{speech_score}/100")
-    st.metric("📝 Answer Quality", f"{content_score}/100")
-    st.metric("✔️ Answer Correctness", f"{correctness_score}/100")
-
-    st.subheader("🎯 Final Interview Score")
-    st.metric("Score", f"{final_score}/100")
-    st.info(f"Interview Readiness Level: **{level}**")
-
-    st.subheader("💡 Recommendations")
-    for r in recommendations:
-        st.write("•", r)

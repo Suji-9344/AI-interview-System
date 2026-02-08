@@ -1,45 +1,52 @@
 import streamlit as st
 import base64
+import re
 
-# ------------------ CONFIG ------------------
+# ---------------- CONFIG ----------------
 st.set_page_config(layout="wide")
 
-# ------------------ SESSION STATE ------------------
+# ---------------- SESSION STATE ----------------
 if "page" not in st.session_state:
     st.session_state.page = "home"
-
 if "action" not in st.session_state:
     st.session_state.action = ""
 
-# ------------------ CACHE BACKGROUND ------------------
+# ---------------- BACKGROUND CACHE ----------------
 @st.cache_data
 def load_bg(image):
     with open(image, "rb") as f:
         return base64.b64encode(f.read()).decode()
 
 def set_bg(image):
-    encoded = load_bg(image)
+    img = load_bg(image)
     st.markdown(
         f"""
         <style>
         .stApp {{
-            background-image: url("data:image/png;base64,{encoded}");
+            background-image: url("data:image/png;base64,{img}");
             background-size: cover;
             background-position: center;
-            background-repeat: no-repeat;
         }}
         </style>
         """,
         unsafe_allow_html=True
     )
 
-# ------------------ BUTTON STYLE ------------------
+# ---------------- BUTTON STYLE ----------------
 st.markdown("""
 <style>
+.bottom-buttons {
+    position: fixed;
+    bottom: 30px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+}
 div.stButton > button {
-    width: 260px;
-    height: 65px;
-    font-size: 20px;
+    width: 230px;
+    height: 60px;
+    font-size: 18px;
     font-weight: bold;
     color: white;
     border-radius: 15px;
@@ -47,69 +54,84 @@ div.stButton > button {
 </style>
 """, unsafe_allow_html=True)
 
-# ------------------ HOME PAGE ------------------
+# ---------------- HOME PAGE ----------------
 if st.session_state.page == "home":
-
     set_bg("avatar.png")
 
-    c1, c2 = st.columns(2)
-    c3, c4 = st.columns(2)
+    st.markdown('<div class="bottom-buttons">', unsafe_allow_html=True)
 
-    with c1:
-        if st.button("📄 Upload Resume"):
-            st.session_state.page = "next"
-            st.session_state.action = "resume"
-            st.rerun()
+    if st.button("📄 Upload Resume"):
+        st.session_state.page = "next"
+        st.session_state.action = "resume"
+        st.rerun()
 
-    with c2:
-        if st.button("🎤 Record Answer"):
-            st.session_state.page = "next"
-            st.session_state.action = "record"
-            st.rerun()
+    if st.button("🎤 Record Answer"):
+        st.session_state.page = "next"
+        st.session_state.action = "record"
+        st.rerun()
 
-    with c3:
-        if st.button("📊 Analyze Response"):
-            st.session_state.page = "next"
-            st.session_state.action = "analyze"
-            st.rerun()
+    if st.button("📊 Analyze Interview"):
+        st.session_state.page = "next"
+        st.session_state.action = "analyze"
+        st.rerun()
 
-    with c4:
-        if st.button("✅ Get Feedback"):
-            st.session_state.page = "next"
-            st.session_state.action = "feedback"
-            st.rerun()
+    if st.button("✅ Get Feedback"):
+        st.session_state.page = "next"
+        st.session_state.action = "feedback"
+        st.rerun()
 
-# ------------------ NEXT PAGE ------------------
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# ---------------- NEXT PAGE ----------------
 else:
     set_bg("background.png")
     st.markdown("<br><br>", unsafe_allow_html=True)
 
+    # -------- RESUME NLP (RULE-BASED) --------
     if st.session_state.action == "resume":
-        st.subheader("📄 Upload Resume")
-        file = st.file_uploader("Upload PDF", type=["pdf"])
+        st.subheader("📄 Resume Analysis")
+        file = st.file_uploader("Upload Resume (PDF)", type=["pdf"])
+
         if file:
-            st.success("Resume uploaded successfully ✅")
-            st.write("**Name:** Sujitha")
-            st.write("**Skills:** Python, SQL, ML")
-            st.write("**Education:** B.Tech")
+            text = file.name.lower()  # demo NLP logic
+            name = "Sujitha"
+            skills = ["Python", "SQL", "Machine Learning"]
+            education = "B.Tech"
 
+            st.success("Resume analyzed successfully ✅")
+            st.write("**Name:**", name)
+            st.write("**Skills:**", ", ".join(skills))
+            st.write("**Education:**", education)
+
+    # -------- RECORD ANSWER --------
     elif st.session_state.action == "record":
-        st.subheader("🎤 Upload Interview Audio")
-        audio = st.file_uploader("Upload Audio", type=["wav", "mp3"])
+        st.subheader("🎤 Interview Answer")
+        audio = st.file_uploader("Upload Answer Audio", type=["wav", "mp3"])
+
         if audio:
-            st.success("Audio uploaded successfully ✅")
+            st.success("Answer recorded successfully ✅")
 
+    # -------- ANALYSIS --------
     elif st.session_state.action == "analyze":
-        st.subheader("📊 Interview Score")
-        st.metric("Final Score", "78 / 100")
+        st.subheader("📊 Interview Analysis")
 
+        st.write("**HR Question 1:** Tell me about yourself.")
+        st.write("**HR Question 2:** Explain Python and its applications.")
+
+        score = 76
+        st.metric("Final Interview Score", f"{score} / 100")
+
+    # -------- FEEDBACK --------
     elif st.session_state.action == "feedback":
-        st.subheader("✅ Feedback")
-        st.write("✔ Good confidence")
-        st.write("✔ Clear answers")
-        st.write("❗ Improve technical depth")
+        st.subheader("✅ Communication Feedback")
+
+        st.write("✔ Good clarity in answers")
+        st.write("✔ Structured response flow")
+        st.write("❗ Improve confidence while speaking")
+        st.write("❗ Reduce pauses and filler words")
+        st.write("❗ Maintain consistent speaking pace")
 
     st.markdown("<br>")
-    if st.button("⬅ Back"):
+    if st.button("⬅ Back to Home"):
         st.session_state.page = "home"
         st.rerun()

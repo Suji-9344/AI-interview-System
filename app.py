@@ -1,42 +1,33 @@
 import streamlit as st
 import speech_recognition as sr
-import pyttsx3
 from PIL import Image
-import numpy as np
 
-# ---------------- HR SPEECH ----------------
-def hr_speak(text):
-    engine = pyttsx3.init()
-    engine.say(text)
-    engine.runAndWait()
+# ---------------- PAGE CONFIG ----------------
+st.set_page_config(page_title="AI Interview System", layout="centered")
 
-# ---------------- PAGE ----------------
+# ---------------- HEADER ----------------
 st.title("🎤 AI Interview Evaluation System")
 
-# ---------------- HR AVATAR ----------------
-col1, col2 = st.columns([1,3])
+col1, col2 = st.columns([1, 3])
 
 with col1:
-    st.image("hr_avatar.jpeg", width=150)
+    st.image("hr_avatar.jpeg", width=140)
 
 with col2:
     st.markdown("### 🤖 AI HR Interviewer")
-    st.write("Welcome! This interview simulates a real HR round.")
+    st.write("Welcome! This is a real-time AI-based interview simulation.")
 
-# ---------------- QUESTION ----------------
+# ---------------- HR QUESTION ----------------
 question = "Tell me about yourself"
-st.info(f"HR: {question}")
+st.info(f"**HR:** {question}")
 
-if st.button("🔊 HR Ask Question"):
-    hr_speak(question)
-
-# ---------------- WEBCAM (NO OPENCV) ----------------
+# ---------------- CAMERA ----------------
 st.subheader("📷 Face Capture")
-img = st.camera_input("Keep your face in front of the camera")
+img = st.camera_input("Keep your face steady while answering")
 
 confidence_score = 5
 if img:
-    st.success("Face captured successfully")
+    st.success("Face detected")
     confidence_score = 15
 
 # ---------------- SPEECH TO TEXT ----------------
@@ -52,39 +43,40 @@ if st.button("🎤 Record Answer"):
 
     try:
         answer_text = r.recognize_google(audio)
-        st.success("Converted Text:")
+        st.success("Converted Text")
         st.write(answer_text)
     except:
-        st.error("Speech not recognized")
+        st.error("Speech not recognized. Try again.")
 
-# ---------------- SCORE + FEEDBACK ----------------
+# ---------------- INTERVIEW EVALUATION ----------------
 if st.button("📊 Submit Interview"):
     if answer_text == "":
-        st.warning("Please answer the question first")
+        st.warning("Please answer the question")
     else:
         words = len(answer_text.split())
-        communication = min(20, words // 2)
-        technical = 20
+
+        communication = min(25, words // 2)
         confidence = confidence_score
+        technical = 20
 
-        final_score = communication + technical + confidence
+        final_score = communication + confidence + technical
 
-        st.subheader("📊 Score Breakdown")
-        st.write(f"🗣 Communication: {communication}/20")
+        st.subheader("📊 Score Analysis")
+        st.write(f"🗣 Communication: {communication}/25")
         st.write(f"😌 Confidence: {confidence}/15")
-        st.write(f"💻 Technical: {technical}/20")
+        st.write(f"💻 Technical Knowledge: {technical}/20")
 
         st.markdown(f"## ✅ Final Score: **{final_score}/100**")
 
         st.subheader("💡 HR Suggestions")
 
         if communication < 10:
-            st.write("- Improve clarity and sentence formation")
+            st.write("• Improve clarity and structured answers")
         if confidence < 10:
-            st.write("- Maintain eye contact and posture")
+            st.write("• Maintain eye contact and calm posture")
         if final_score >= 60:
-            st.success("Good interview performance!")
+            st.success("Good performance! You are interview ready.")
         else:
             st.warning("Needs improvement. Practice mock interviews.")
 
-        hr_speak("Thank you. Your interview is completed.")
+        st.info("🤖 HR: Thank you. Your interview is completed.")

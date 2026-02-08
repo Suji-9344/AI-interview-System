@@ -1,6 +1,5 @@
 import streamlit as st
-import pdfplumber
-import re
+import PyPDF2
 import random
 
 # ---------------- PAGE CONFIG ----------------
@@ -60,16 +59,16 @@ AI-Based Interview Evaluation System
 
 # ---------------- FUNCTIONS ----------------
 def extract_text_from_pdf(uploaded_file):
+    reader = PyPDF2.PdfReader(uploaded_file)
     text = ""
-    with pdfplumber.open(uploaded_file) as pdf:
-        for page in pdf.pages:
-            text += page.extract_text() + "\n"
+    for page in reader.pages:
+        text += page.extract_text()
     return text
 
 
 def extract_name(text):
     lines = text.split("\n")
-    for line in lines[:5]:  # mostly name is in top
+    for line in lines[:6]:
         if len(line.split()) <= 3:
             return line.strip()
     return "Candidate"
@@ -77,32 +76,26 @@ def extract_name(text):
 
 def extract_skills(text):
     skill_list = ["Python", "SQL", "Machine Learning", "Java", "C", "Data Science"]
-    found_skills = [skill for skill in skill_list if skill.lower() in text.lower()]
-    return found_skills
+    return [skill for skill in skill_list if skill.lower() in text.lower()]
 
 
 def generate_scores(skills):
-    base = 60
-    tech_score = min(40, 20 + len(skills) * 5)
-    comm_score = random.randint(12, 18)
-    conf_score = random.randint(10, 14)
+    tech = min(40, 20 + len(skills) * 5)
+    comm = random.randint(12, 18)
+    conf = random.randint(10, 14)
+    final = tech + comm + conf
+    return tech, comm, conf, final
 
-    final_score = tech_score + comm_score + conf_score
-    return tech_score, comm_score, conf_score, final_score
-
-
-# ---------------- MAIN CONTENT ----------------
+# ---------------- MAIN UI ----------------
 col1, col2 = st.columns([1, 2])
 
-# -------- LEFT SIDE --------
 with col1:
     st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.subheader("📄 Upload Your Resume")
-    resume = st.file_uploader("Browse files", type=["pdf"])
+    st.subheader("📄 Upload Resume")
+    resume = st.file_uploader("Choose PDF file", type=["pdf"])
     analyze = st.button("Analyze Resume")
     st.markdown("</div>", unsafe_allow_html=True)
 
-# -------- RIGHT SIDE --------
 if resume and analyze:
     text = extract_text_from_pdf(resume)
     name = extract_name(text)
@@ -114,9 +107,9 @@ if resume and analyze:
         st.markdown("<div class='card'>", unsafe_allow_html=True)
         st.subheader("Resume Analysis")
         st.write(f"**Name:** {name}")
-        st.write(f"**Skills:** {', '.join(skills) if skills else 'Not Detected'}")
+        st.write(f"**Skills:** {', '.join(skills) if skills else 'Not detected'}")
         st.write("**Education:** B.E / B.Tech")
-        st.write("**Project:** AI-Based Interview System")
+        st.write("**Project:** AI Interview Evaluation System")
         st.markdown("</div>", unsafe_allow_html=True)
 
     with col2:
@@ -133,24 +126,20 @@ if resume and analyze:
 
         st.markdown("<div class='card'>", unsafe_allow_html=True)
         st.subheader("📊 Score Breakdown")
-
-        st.write(f"Technical: **{tech} / 40**")
-        st.write(f"Communication: **{comm} / 20**")
-        st.write(f"Confidence: **{conf} / 15**")
-
-        st.markdown(f"### 🏆 Final Score: **{final} / 100**")
+        st.write(f"Technical: **{tech}/40**")
+        st.write(f"Communication: **{comm}/20**")
+        st.write(f"Confidence: **{conf}/15**")
+        st.markdown(f"### 🏆 Final Score: **{final}/100**")
         st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.subheader("📝 Feedback & Suggestions")
-
-        st.write("✅ **Strengths:** Good technical understanding")
-        st.write("⚠️ **Improvements:** Improve eye contact and fluency")
-        st.write("💡 **Tip:** Practice mock interviews regularly")
-
+        st.subheader("📝 Feedback")
+        st.write("✅ Good technical understanding")
+        st.write("⚠️ Improve eye contact and fluency")
+        st.write("💡 Practice mock interviews")
         st.markdown("</div>", unsafe_allow_html=True)
 
 else:
     with col2:
-        st.info("👆 Upload resume and click **Analyze Resume** to start")
+        st.info("👈 Upload resume and click **Analyze Resume**")
 

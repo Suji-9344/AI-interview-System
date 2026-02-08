@@ -1,21 +1,21 @@
 import streamlit as st
+import base64
 
-# Display avatars
-col1, col2 = st.columns([1, 2])
-with col1:
-    st.image("hr_avatar.jpeg", width=200)
-with col2:
-    st.image("user_avatar.png", width=200)
+def set_bg(image_file):
+    with open(image_file, "rb") as f:
+        encoded = base64.b64encode(f.read()).decode()
+    st.markdown(
+        f"""
+        <style>
+        .stApp {{
+            background-image: url("data:image/png;base64,{encoded}");
+            background-size: cover;       /* Makes image full-screen */
+            background-repeat: no-repeat; /* Prevent tiling */
+            background-position: center;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
-# Buttons
-if st.button("🎤 Record Answer"):
-    st.write("Recording started...")
-
-if st.button("📄 Upload Resume"):
-    st.write("Resume upload dialog opened...")
-
-if st.button("📊 Analyze Response"):
-    st.write("Analyzing answer...")
-
-if st.button("✅ Get Feedback"):
-    st.write("Showing feedback...")
+set_bg("background.png")

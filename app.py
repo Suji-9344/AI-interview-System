@@ -1,7 +1,7 @@
 import streamlit as st
 import base64
 
-# ------------------ PAGE CONFIG ------------------
+# ------------------ CONFIG ------------------
 st.set_page_config(layout="wide")
 
 # ------------------ SESSION STATE ------------------
@@ -11,10 +11,14 @@ if "page" not in st.session_state:
 if "action" not in st.session_state:
     st.session_state.action = ""
 
-# ------------------ BACKGROUND FUNCTION ------------------
-def set_bg(image):
+# ------------------ CACHE BACKGROUND ------------------
+@st.cache_data
+def load_bg(image):
     with open(image, "rb") as f:
-        encoded = base64.b64encode(f.read()).decode()
+        return base64.b64encode(f.read()).decode()
+
+def set_bg(image):
+    encoded = load_bg(image)
     st.markdown(
         f"""
         <style>
@@ -29,89 +33,83 @@ def set_bg(image):
         unsafe_allow_html=True
     )
 
+# ------------------ BUTTON STYLE ------------------
+st.markdown("""
+<style>
+div.stButton > button {
+    width: 260px;
+    height: 65px;
+    font-size: 20px;
+    font-weight: bold;
+    color: white;
+    border-radius: 15px;
+}
+</style>
+""", unsafe_allow_html=True)
+
 # ------------------ HOME PAGE ------------------
 if st.session_state.page == "home":
 
     set_bg("avatar.png")
 
-    st.markdown("""
-    <style>
-    .btn {
-        width: 260px;
-        height: 65px;
-        font-size: 20px;
-        font-weight: bold;
-        color: white;
-        border-radius: 15px;
-        border: none;
-        margin: 15px;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+    c1, c2 = st.columns(2)
+    c3, c4 = st.columns(2)
 
-    col1, col2 = st.columns(2)
-    col3, col4 = st.columns(2)
-
-    with col1:
-        if st.button("📄 Upload Resume", key="resume"):
+    with c1:
+        if st.button("📄 Upload Resume"):
             st.session_state.page = "next"
             st.session_state.action = "resume"
+            st.rerun()
 
-    with col2:
-        if st.button("🎤 Record Answer", key="record"):
+    with c2:
+        if st.button("🎤 Record Answer"):
             st.session_state.page = "next"
             st.session_state.action = "record"
+            st.rerun()
 
-    with col3:
-        if st.button("📊 Analyze Response", key="analyze"):
+    with c3:
+        if st.button("📊 Analyze Response"):
             st.session_state.page = "next"
             st.session_state.action = "analyze"
+            st.rerun()
 
-    with col4:
-        if st.button("✅ Get Feedback", key="feedback"):
+    with c4:
+        if st.button("✅ Get Feedback"):
             st.session_state.page = "next"
             st.session_state.action = "feedback"
+            st.rerun()
 
 # ------------------ NEXT PAGE ------------------
-elif st.session_state.page == "next":
-
+else:
     set_bg("background.png")
-
     st.markdown("<br><br>", unsafe_allow_html=True)
 
-    # -------- UPLOAD RESUME --------
     if st.session_state.action == "resume":
         st.subheader("📄 Upload Resume")
-        resume = st.file_uploader("Upload PDF Resume", type=["pdf"])
-
-        if resume:
+        file = st.file_uploader("Upload PDF", type=["pdf"])
+        if file:
             st.success("Resume uploaded successfully ✅")
             st.write("**Name:** Sujitha")
             st.write("**Skills:** Python, SQL, ML")
             st.write("**Education:** B.Tech")
 
-    # -------- RECORD ANSWER --------
     elif st.session_state.action == "record":
-        st.subheader("🎤 Upload Interview Answer Audio")
-        audio = st.file_uploader("Upload Audio File", type=["wav", "mp3"])
-
+        st.subheader("🎤 Upload Interview Audio")
+        audio = st.file_uploader("Upload Audio", type=["wav", "mp3"])
         if audio:
             st.success("Audio uploaded successfully ✅")
 
-    # -------- ANALYZE RESPONSE --------
     elif st.session_state.action == "analyze":
         st.subheader("📊 Interview Score")
         st.metric("Final Score", "78 / 100")
 
-    # -------- GET FEEDBACK --------
     elif st.session_state.action == "feedback":
-        st.subheader("✅ Interview Feedback")
+        st.subheader("✅ Feedback")
         st.write("✔ Good confidence")
         st.write("✔ Clear answers")
         st.write("❗ Improve technical depth")
-        st.write("❗ Maintain eye contact")
 
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    if st.button("⬅ Back to Home"):
+    st.markdown("<br>")
+    if st.button("⬅ Back"):
         st.session_state.page = "home"
+        st.rerun()

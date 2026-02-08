@@ -5,31 +5,39 @@ import speech_recognition as sr
 # ------------------ APP CONFIG ------------------
 st.set_page_config(page_title="AI Interview System", layout="wide")
 
-# ------------------ SHOW BIG AVATAR ------------------
-st.image("avatar.png", use_column_width=True)  # big avatar image
-st.markdown("<br>", unsafe_allow_html=True)
+# ------------------ DISPLAY BIG AVATAR ------------------
+st.image("avatar.png", use_column_width=True)  # Big avatar image
+st.markdown("<br><br>", unsafe_allow_html=True)
 
 # ------------------ BUTTON CSS ------------------
 st.markdown("""
 <style>
+/* Style all buttons */
 div.stButton > button {
-    width: 250px;
+    width: 220px;
     height: 60px;
     font-size: 18px;
     font-weight: bold;
     color: white;
-    margin: 10px;
     border-radius: 12px;
+    margin: 10px;
 }
-.upload button { background-color: #2ecc71; }   /* green */
-.record button { background-color: #ff4b4b; }   /* red */
-.analyze button { background-color: #3498db; }  /* blue */
-.feedback button { background-color: #f39c12; } /* orange */
+
+/* Color for each button */
+.upload button { background-color: #2ecc71 !important; }    /* green */
+.record button { background-color: #ff4b4b !important; }    /* red */
+.analyze button { background-color: #3498db !important; }   /* blue */
+.feedback button { background-color: #f39c12 !important; }  /* orange */
+.next button { background-color: #9b59b6 !important; }       /* purple for next page */
 </style>
 """, unsafe_allow_html=True)
 
 # ------------------ BUTTONS ------------------
 cols = st.columns(4)  # Four buttons side by side
+
+uploaded_file = None
+audio_file_path = None
+score = None
 
 # ---------- UPLOAD RESUME ----------
 with cols[0]:
@@ -38,7 +46,6 @@ with cols[0]:
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------- RECORD ANSWER ----------
-audio_file_path = None
 with cols[1]:
     st.markdown('<div class="record">', unsafe_allow_html=True)
     if st.button("🎤 Record Answer"):
@@ -58,12 +65,11 @@ with cols[1]:
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------- ANALYZE RESPONSE ----------
-score = None
 with cols[2]:
     st.markdown('<div class="analyze">', unsafe_allow_html=True)
     if st.button("📊 Analyze Response"):
         st.write("Analyzing response...")
-        # -------- RESUME PARSING ----------
+        # -------- RESUME PARSING PLACEHOLDER ---------
         if uploaded_file:
             st.write(f"Resume uploaded: {uploaded_file.name}")
             st.write("Identified Name: John Doe")
@@ -71,7 +77,7 @@ with cols[2]:
             st.write("Education: B.Tech")
         else:
             st.warning("Please upload a resume first!")
-        # -------- AUDIO ANALYSIS ----------
+        # -------- AUDIO ANALYSIS PLACEHOLDER ---------
         if audio_file_path:
             st.write("Processing recorded audio...")
             # Placeholder: calculate score
@@ -102,7 +108,7 @@ with cols[3]:
 # ------------------ NEXT PAGE BUTTON ------------------
 st.markdown("<br><br>", unsafe_allow_html=True)
 if st.button("➡ Go to Processed Results"):
-    # Navigate to results section
+    st.markdown('<div class="next">', unsafe_allow_html=True)
     st.write("Showing processed results...")
     if uploaded_file:
         st.write(f"Resume Name: John Doe")
@@ -113,3 +119,4 @@ if st.button("➡ Go to Processed Results"):
     if score:
         st.write(f"Score: {score}/100")
         st.write("Feedback: See suggestions above")
+    st.markdown('</div>', unsafe_allow_html=True)

@@ -1,122 +1,117 @@
 import streamlit as st
-import tempfile
-import speech_recognition as sr
+import base64
 
-# ------------------ APP CONFIG ------------------
-st.set_page_config(page_title="AI Interview System", layout="wide")
+# ------------------ PAGE CONFIG ------------------
+st.set_page_config(layout="wide")
 
-# ------------------ DISPLAY BIG AVATAR ------------------
-st.image("avatar.png", use_column_width=True)  # Big avatar image
-st.markdown("<br><br>", unsafe_allow_html=True)
+# ------------------ SESSION STATE ------------------
+if "page" not in st.session_state:
+    st.session_state.page = "home"
 
-# ------------------ BUTTON CSS ------------------
-st.markdown("""
-<style>
-/* Style all buttons */
-div.stButton > button {
-    width: 220px;
-    height: 60px;
-    font-size: 18px;
-    font-weight: bold;
-    color: white;
-    border-radius: 12px;
-    margin: 10px;
-}
+if "action" not in st.session_state:
+    st.session_state.action = ""
 
-/* Color for each button */
-.upload button { background-color: #2ecc71 !important; }    /* green */
-.record button { background-color: #ff4b4b !important; }    /* red */
-.analyze button { background-color: #3498db !important; }   /* blue */
-.feedback button { background-color: #f39c12 !important; }  /* orange */
-.next button { background-color: #9b59b6 !important; }       /* purple for next page */
-</style>
-""", unsafe_allow_html=True)
+# ------------------ BACKGROUND FUNCTION ------------------
+def set_bg(image):
+    with open(image, "rb") as f:
+        encoded = base64.b64encode(f.read()).decode()
+    st.markdown(
+        f"""
+        <style>
+        .stApp {{
+            background-image: url("data:image/png;base64,{encoded}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
-# ------------------ BUTTONS ------------------
-cols = st.columns(4)  # Four buttons side by side
+# ------------------ HOME PAGE ------------------
+if st.session_state.page == "home":
 
-uploaded_file = None
-audio_file_path = None
-score = None
+    set_bg("avatar.png")
 
-# ---------- UPLOAD RESUME ----------
-with cols[0]:
-    st.markdown('<div class="upload">', unsafe_allow_html=True)
-    uploaded_file = st.file_uploader("Upload Resume (PDF)")
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("""
+    <style>
+    .btn {
+        width: 260px;
+        height: 65px;
+        font-size: 20px;
+        font-weight: bold;
+        color: white;
+        border-radius: 15px;
+        border: none;
+        margin: 15px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-# ---------- RECORD ANSWER ----------
-with cols[1]:
-    st.markdown('<div class="record">', unsafe_allow_html=True)
-    if st.button("🎤 Record Answer"):
-        st.write("Recording answer via microphone...")
-        r = sr.Recognizer()
-        try:
-            with sr.Microphone() as source:
-                st.info("Please speak now (max 10 seconds)...")
-                audio_data = r.listen(source, phrase_time_limit=10)
-                tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
-                with open(tmp_file.name, "wb") as f:
-                    f.write(audio_data.get_wav_data())
-                audio_file_path = tmp_file.name
-                st.success("Audio recorded successfully!")
-        except Exception as e:
-            st.error(f"Microphone not accessible: {e}")
-    st.markdown('</div>', unsafe_allow_html=True)
+    col1, col2 = st.columns(2)
+    col3, col4 = st.columns(2)
 
-# ---------- ANALYZE RESPONSE ----------
-with cols[2]:
-    st.markdown('<div class="analyze">', unsafe_allow_html=True)
-    if st.button("📊 Analyze Response"):
-        st.write("Analyzing response...")
-        # -------- RESUME PARSING PLACEHOLDER ---------
-        if uploaded_file:
-            st.write(f"Resume uploaded: {uploaded_file.name}")
-            st.write("Identified Name: John Doe")
-            st.write("Skills: Python, SQL, Machine Learning")
-            st.write("Education: B.Tech")
-        else:
-            st.warning("Please upload a resume first!")
-        # -------- AUDIO ANALYSIS PLACEHOLDER ---------
-        if audio_file_path:
-            st.write("Processing recorded audio...")
-            # Placeholder: calculate score
-            score = 78
-            st.write(f"Score Prediction: {score}/100")
-        else:
-            st.warning("Please record your answer first!")
-    st.markdown('</div>', unsafe_allow_html=True)
+    with col1:
+        if st.button("📄 Upload Resume", key="resume"):
+            st.session_state.page = "next"
+            st.session_state.action = "resume"
 
-# ---------- GET FEEDBACK ----------
-with cols[3]:
-    st.markdown('<div class="feedback">', unsafe_allow_html=True)
-    if st.button("✅ Get Feedback"):
-        st.write("Showing feedback and suggestions...")
-        if score:
-            if score >= 80:
-                st.success("Excellent performance! Keep it up.")
-            elif score >= 60:
-                st.info("Good, but improve confidence and clarity.")
-            else:
-                st.warning("Needs improvement: Practice more and work on communication skills.")
-            st.write("- Improve confidence and body language")
-            st.write("- Clear pronunciation and structured answers")
-        else:
-            st.warning("Please analyze response first!")
-    st.markdown('</div>', unsafe_allow_html=True)
+    with col2:
+        if st.button("🎤 Record Answer", key="record"):
+            st.session_state.page = "next"
+            st.session_state.action = "record"
 
-# ------------------ NEXT PAGE BUTTON ------------------
-st.markdown("<br><br>", unsafe_allow_html=True)
-if st.button("➡ Go to Processed Results"):
-    st.markdown('<div class="next">', unsafe_allow_html=True)
-    st.write("Showing processed results...")
-    if uploaded_file:
-        st.write(f"Resume Name: John Doe")
-        st.write("Skills: Python, SQL, Machine Learning")
-        st.write("Education: B.Tech")
-    if audio_file_path:
-        st.write("Audio file processed successfully")
-    if score:
-        st.write(f"Score: {score}/100")
-        st.write("Feedback: See suggestions above")
-    st.markdown('</div>', unsafe_allow_html=True)
+    with col3:
+        if st.button("📊 Analyze Response", key="analyze"):
+            st.session_state.page = "next"
+            st.session_state.action = "analyze"
+
+    with col4:
+        if st.button("✅ Get Feedback", key="feedback"):
+            st.session_state.page = "next"
+            st.session_state.action = "feedback"
+
+# ------------------ NEXT PAGE ------------------
+elif st.session_state.page == "next":
+
+    set_bg("background.png")
+
+    st.markdown("<br><br>", unsafe_allow_html=True)
+
+    # -------- UPLOAD RESUME --------
+    if st.session_state.action == "resume":
+        st.subheader("📄 Upload Resume")
+        resume = st.file_uploader("Upload PDF Resume", type=["pdf"])
+
+        if resume:
+            st.success("Resume uploaded successfully ✅")
+            st.write("**Name:** Sujitha")
+            st.write("**Skills:** Python, SQL, ML")
+            st.write("**Education:** B.Tech")
+
+    # -------- RECORD ANSWER --------
+    elif st.session_state.action == "record":
+        st.subheader("🎤 Upload Interview Answer Audio")
+        audio = st.file_uploader("Upload Audio File", type=["wav", "mp3"])
+
+        if audio:
+            st.success("Audio uploaded successfully ✅")
+
+    # -------- ANALYZE RESPONSE --------
+    elif st.session_state.action == "analyze":
+        st.subheader("📊 Interview Score")
+        st.metric("Final Score", "78 / 100")
+
+    # -------- GET FEEDBACK --------
+    elif st.session_state.action == "feedback":
+        st.subheader("✅ Interview Feedback")
+        st.write("✔ Good confidence")
+        st.write("✔ Clear answers")
+        st.write("❗ Improve technical depth")
+        st.write("❗ Maintain eye contact")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    if st.button("⬅ Back to Home"):
+        st.session_state.page = "home"

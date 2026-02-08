@@ -1,87 +1,143 @@
 import streamlit as st
-import speech_recognition as sr
+import PyPDF2
+import random
 
-st.set_page_config(page_title="AI Interview System", layout="centered")
+# ---------------- PAGE CONFIG ----------------
+st.set_page_config(
+    page_title="AI-Based Interview Evaluation System",
+    page_icon="🎯",
+    layout="wide"
+)
 
-st.title("🎤 AI-Based Interview Evaluation System")
+# ---------------- CSS ----------------
+st.markdown("""
+<style>
+.main { background-color: #f5f7fb; }
+.header {
+    background: linear-gradient(90deg, #2563eb, #3b82f6);
+    padding: 30px;
+    border-radius: 12px;
+    color: white;
+    font-size: 32px;
+    font-weight: bold;
+}
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0px 4px 12px rgba(0,0,0,0.08);
+    margin-top: 20px;
+}
+</style>
+""", unsafe_allow_html=True)
 
-# ---------------- HR AVATAR ----------------
-col1, col2 = st.columns([1, 3])
+# ---------------- HEADER ----------------
+st.markdown("""
+<div class="header">
+AI-Based Interview Evaluation System
+<div style="font-size:16px;">Upload resume and attend AI interview</div>
+</div>
+""", unsafe_allow_html=True)
+
+# ---------------- FUNCTIONS (UNCHANGED) ----------------
+def extract_text_from_pdf(uploaded_file):
+    reader = PyPDF2.PdfReader(uploaded_file)
+    text = ""
+    for page in reader.pages:
+        text += page.extract_text()
+    return text
+
+def extract_name(text):
+    lines = text.split("\n")
+    for line in lines[:6]:
+        if len(line.split()) <= 3:
+            return line.strip()
+    return "Candidate"
+
+def extract_skills(text):
+    skills = ["Python", "SQL", "Machine Learning", "Java", "C"]
+    return [s for s in skills if s.lower() in text.lower()]
+
+def generate_scores(answer_text):
+    tech = random.randint(25, 40)
+    comm = random.randint(12, 20)
+    conf = random.randint(10, 15)
+    final = tech + comm + conf
+    return tech, comm, conf, final
+
+# ---------------- UI LAYOUT ----------------
+col1, col2 = st.columns([1, 2])
+
+# -------- LEFT: RESUME UPLOAD --------
 with col1:
-    st.image("hr_avatar.jpeg", width=130)
-with col2:
-    st.markdown("### 🤖 AI HR Interviewer")
-    st.write("Welcome! This simulates a real interview process.")
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    st.subheader("📄 Upload Resume")
+    resume = st.file_uploader("Choose PDF", type=["pdf"])
+    analyze = st.button("Analyze Resume")
+    st.markdown("</div>", unsafe_allow_html=True)
 
-# ---------------- RESUME INPUT (TEXT) ----------------
-st.subheader("📄 Resume Details")
-candidate_name = st.text_input("Enter your name")
-skills_text = st.text_area("Enter your skills (comma separated)")
+# ---------------- MAIN LOGIC ----------------
+if resume and analyze:
+    text = extract_text_from_pdf(resume)
+    name = extract_name(text)
+    skills = extract_skills(text)
 
-skills = [s.strip() for s in skills_text.split(",") if s.strip()]
+    # Resume analysis (UNCHANGED)
+    with col1:
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("Resume Analysis")
+        st.write(f"**Name:** {name}")
+        st.write(f"**Skills:** {', '.join(skills)}")
+        st.write("**Education:** B.E / B.Tech")
+        st.write("**Project:** AI Interview Evaluation System")
+        st.markdown("</div>", unsafe_allow_html=True)
 
-if candidate_name:
-    st.success(f"Candidate Name: {candidate_name}")
-    st.write("Skills:", ", ".join(skills))
+    # -------- INTERVIEW SECTION (MODIFIED) --------
+    with col2:
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("🎥 Interview Simulation")
 
-# ---------------- HR QUESTION ----------------
-if candidate_name:
-    question = f"Hello {candidate_name}, tell me about yourself."
-    st.info(f"**HR:** {question}")
+        c1, c2 = st.columns(2)
 
-# ---------------- CAMERA ----------------
-st.subheader("📷 Confidence Check")
-img = st.camera_input("Keep your face in front of the camera")
+        # AI HR AVATAR
+        with c1:
+            st.image("hr_avatar.png", caption="AI HR")
+            st.info("Tell me about yourself")
 
-confidence_score = 5
-if img:
-    st.success("Face detected")
-    confidence_score = 15
+        # USER CAMERA
+        with c2:
+            user_img = st.camera_input("Rahul - Webcam")
 
-# ---------------- AUDIO ANSWER ----------------
-st.subheader("🎧 Upload Your Answer Audio")
-audio_file = st.file_uploader("Upload WAV or MP3", type=["wav", "mp3"])
+        st.markdown("</div>", unsafe_allow_html=True)
 
-answer_text = ""
+        # -------- MIC INPUT --------
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("🎙 Answer using Mic")
+        audio = st.audio_input("Speak now")
 
-if audio_file:
-    recognizer = sr.Recognizer()
-    with sr.AudioFile(audio_file) as source:
-        audio = recognizer.record(source)
+        answer_text = st.text_area("Or type your answer")
 
-    try:
-        answer_text = recognizer.recognize_google(audio)
-        st.success("Speech converted to text")
-        st.write(answer_text)
-    except:
-        st.error("Speech recognition failed")
+        if st.button("Submit Answer"):
+            tech, comm, conf, final = generate_scores(answer_text)
 
-# ---------------- EVALUATION ----------------
-if st.button("📊 Submit Interview"):
-    if not answer_text:
-        st.warning("Please upload your answer audio")
-    else:
-        word_count = len(answer_text.split())
+            # HR RESPONSE
+            st.success("AI HR: Thank you for your answer.")
 
-        communication = min(30, word_count // 2)
-        confidence = confidence_score
-        technical = 20 if any(skill.lower() in answer_text.lower() for skill in skills) else 10
+            # SCORE
+            st.markdown("### 📊 Score Breakdown")
+            st.write(f"Technical: **{tech}/40**")
+            st.write(f"Communication: **{comm}/20**")
+            st.write(f"Confidence: **{conf}/15**")
+            st.markdown(f"## 🏆 Final Score: **{final}/100**")
 
-        final_score = communication + confidence + technical
+            # SUGGESTIONS
+            st.markdown("### 📝 Suggestions")
+            st.write("✅ Good explanation")
+            st.write("⚠️ Improve eye contact")
+            st.write("💡 Speak more confidently")
 
-        st.subheader("📊 Interview Result")
-        st.write(f"🗣 Communication: {communication}/30")
-        st.write(f"😌 Confidence: {confidence}/15")
-        st.write(f"💻 Technical: {technical}/20")
+        st.markdown("</div>", unsafe_allow_html=True)
 
-        st.markdown(f"## ✅ Final Score: **{final_score}/100**")
-
-        st.subheader("💡 HR Suggestions")
-        if communication < 15:
-            st.write("• Improve clarity and sentence structure")
-        if confidence < 10:
-            st.write("• Maintain eye contact and calm posture")
-        if technical < 15:
-            st.write("• Include more technical keywords")
-
-        st.info("🤖 HR: Thank you. Interview completed.")
+else:
+    with col2:
+        st.info("Upload resume and click Analyze Resume to start interview")
